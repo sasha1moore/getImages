@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Image Pull</title>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css" />
+    <style>
+        .image-row {
+            padding: 10px;
+        }
+
+        .image-row img {
+            max-width: 500px;
+            height: auto;
+            margin: -1px;
+        }
+    </style>
+</head>
+
+<body>
+    <input type="number" id="ec-id-input" placeholder="Enter EC ID">
+    <input type="text" id="name-input" placeholder="Name" readonly>
+    <input type="datetime-local" id="date-input">
+    <span>(GMT)</span>
+    <button onclick="updateImages()">Update Images</button>
+    <div id="carousel" class="image-row">
+        <!-- Images will be inserted here by JavaScript -->
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js"></script>
+    <script>
+        var ec_id, epoch_seconds, epoch_time;
+        var baseUrl;
+        var csvData;
+
+        // Load the CSV file
+        Papa.parse('create_time_lookup.csv', {
+            download: true,
+            header: true,
+            complete: function (results) {
+                csvData = results.data;
+                // Log the column headers to the console
+                console.log('CSV Column Headers:', results.meta.fields);
+            },
+            error: function (err, file, inputElem, reason) {
+                console.log('Error:', err, reason);  // Log any error for debugging
+            },
+        });
+
+        function updateNameField() {
+            ec_id = document.getElementById("ec-id-input").value;
+            console.log('EC ID:', ec_id);
+            // Find the matching record from the CSV data
+            var record = csvData.find(row => String(row.ec_id) === String(ec_id));
+            console.log('Record:', record);  // Check if a record is being found
+            if (record) {
+                // If a match was found, update the name field
+                document.getElementById("name-input").value = record.name;
+            } else {
+                // If no match was found, clear the name field
+                document.getElementById("name-input").value = '';
+            }
+        }
+
+        function updateImages() {
+            // Get the value from the input boxes
+            ec_id = document.getElementById("ec-id-input").value;
+            var dateTime = document.getElementById("date-input").value;
+
+            // Parse the date time string as UTC with Moment.js
+            var date = moment.utc(dateTime);
+
+            // Convert the date time to epoch seconds
+            epoch_seconds = date.unix();
+
+            // Calculate epoch_time using the formula
+            epoch_time = Math.floor((epoch_seconds - 1675717917) / 60);
+
+            // Update the base URL with the EC ID and epoch_time
+            baseUrl = "https://storage.googleapis.com/pano-rd-p-dev/" + ec_id + "/1/" + epoch_time + "/";
+
+            // Clear any existing images
+            document.getElementById("carousel").innerHTML = '';
+
+            // Loop over the indices and add the images to the page
+            for (var i = 0; i < 10; i++) {
+                // Create a new image element
+                var img = document.createElement("img");
+
+                // Set the source of the image element to be the base URL plus the current index
+                img.src = baseUrl + i;
+
+                // Set the alt text of the image
+                img.alt = "Your Image " + i;
+
+                // Add the image element to the carousel
+                document.getElementById("carousel").appendChild(img);
+            }
+
+            // Initialize the carousel
+            $('#carousel').slick({
+                infinite: true,
+                slidesToShow: 3,
+                slidesToScroll: 1
+            });
+        }
+    </script>
+</body>
+
+</html>
